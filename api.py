@@ -1,5 +1,8 @@
+from __future__ import unicode_literals
+
 from flask import Flask, request
 import json
+import logging
 
 app = Flask(__name__)
 
@@ -19,19 +22,19 @@ class Dialog:
         }
 
     def greeting(self):
-        self.response.text = 'Привет! Хотите посмотреть правила или будем играть сразу?'
+        self.response['response']['text'] = 'Привет! Хотите посмотреть правила или будем играть сразу?'
 
     def handle_first_step(self, tokens, user_id):
         if {'правила'}.intersection(tokens):
-            self.response.text = ''  # ЗДЕСЬ МОГЛИ БЫТЬ ВАШИ ПРАВИЛА, НО ИХ НЕ ЗАВЕЗЛИ
+            self.response['response']['text'] = ''  # ЗДЕСЬ МОГЛИ БЫТЬ ВАШИ ПРАВИЛА, НО ИХ НЕ ЗАВЕЗЛИ
         elif {'играть'}.intersection(tokens):
-            self.response.text = ''  # ТРИ НЕЗАВЕЗЕННЫЕ ТЕМКИ
+            self.response['response']['text'] = ''  # ТРИ НЕЗАВЕЗЕННЫЕ ТЕМКИ
             Dialog.storage[user_id]['step'] = 2
         else:
-            self.response.text = 'Я вас не понимаю. Скажите глупому боту подоходчивее.'
+            self.response['response']['text'] = 'Я вас не понимаю. Скажите глупому боту подоходчивее.'
 
 
-@app.route('/post', methods=['POST'])
+@app.route('/', methods=['POST'])
 def main():
     dialog = Dialog()
     user_id = request.json['session']['user_id']
