@@ -6,8 +6,6 @@ import logging
 
 app = Flask(__name__)
 
-storage = {}
-
 
 class Dialog:
     storage = {}
@@ -16,17 +14,19 @@ class Dialog:
         self.response = {
             'session': request.json['session'],
             'version': request.json['version'],
-            'response': {
-                'end_session': False
-            }
+            'response': {}
         }
+        self.response['response']['end_session'] = False
 
     def greeting(self):
-        self.response['response']['text'] = 'Привет! Хотите посмотреть правила или будем играть сразу?'
+        self.response['response']['text'] = 'Привет! Хотите посмотреть правила или начнем играть?'
 
     def handle_first_step(self, tokens, user_id):
         if {'правила'}.intersection(tokens):
-            self.response['response']['text'] = ''  # ЗДЕСЬ МОГЛИ БЫТЬ ВАШИ ПРАВИЛА, НО ИХ НЕ ЗАВЕЗЛИ
+            self.response['response']['text'] = 'Сперва вам предлагаются 3 темы на вопросы. Сменить их вы можете \
+            не больше трех раз. Далее следуют 6 вопросов стоимостью 100, 125 и 150 очков на выбранные темы. \
+            При правильном ответе к вашим очкам прибавляется стоимость вопроса. \
+            При неверном отнимается половина стоимости'  # Правила могут ребаланснуться в любой момент времени
         elif {'играть'}.intersection(tokens):
             self.response['response']['text'] = ''  # ТРИ НЕЗАВЕЗЕННЫЕ ТЕМКИ
             Dialog.storage[user_id]['step'] = 2
