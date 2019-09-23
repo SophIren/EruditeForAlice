@@ -5,12 +5,12 @@ def set_empty_values_for_theme(theme, quests_num, costs, conn, cursor):
         raise ValueError
 
     for i in range(quests_num):
-        params = (i + 1, theme, '', '', costs[i % costs_len])
         try:
-            cursor.execute('INSERT INTO questions(id, theme, content, answer, cost) VALUES(?, ?, ?, ?, ?)', params)
-        except sqlite3.IntegrityError:
-            return
-        conn.commit()
+            cursor.execute('SELECT content FROM questions WHERE theme=?', (theme,)).fetchall()[i]
+        except IndexError:
+            params = (theme, '', '', costs[i % costs_len])
+            cursor.execute('INSERT INTO questions(theme, content, answer, cost) VALUES(?, ?, ?, ?)', params)
+            conn.commit()
 
 
 if __name__ == "__main__":
@@ -18,7 +18,7 @@ if __name__ == "__main__":
 
     conn = sqlite3.connect("data.db")
     cursor = conn.cursor()
-    THEMES = ['Биология']
+    THEMES = ['Операционные системы', 'Анатомия', 'Авторы произведений']
     for theme in THEMES:
-        set_empty_values_for_theme(theme, 30, [100, 150], conn, cursor)
+        set_empty_values_for_theme(theme, 10, [100, 150], conn, cursor)
     conn.close()
