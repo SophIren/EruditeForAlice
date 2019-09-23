@@ -1,10 +1,19 @@
 from __future__ import unicode_literals
 
 from flask import Flask, request
+import sqlite3
 import json
 import logging
 
 app = Flask(__name__)
+
+
+class QuestionsModel:
+    def __init__(self):
+        self.conn = sqlite3.connect('data.db')
+
+    def close_connection(self):
+        self.conn.close()
 
 
 class Dialog:
@@ -24,9 +33,10 @@ class Dialog:
     def handle_first_step(self, tokens, user_id):
         if {'правила'}.intersection(tokens):
             self.response['response']['text'] = 'Сперва вам предлагаются 3 темы на вопросы. Сменить их вы можете \
-            не больше трех раз. Далее следуют 6 вопросов стоимостью 100, 125 и 150 очков на выбранные темы. \
-            При правильном ответе к вашим очкам прибавляется стоимость вопроса. \
-            При неверном отнимается половина стоимости'  # Правила могут ребаланснуться в любой момент времени
+            не более трех раз. Далее следуют 6 вопросов стоимостью 100, 125 и 150 очков на выбранные темы. \
+            При правильном ответе к вашим очкам прибавляется стоимость вопроса. При неверном отнимается \
+            половина стоимости. При выборе новых тем ваши очки сохраняются.'
+            # Правила могут ребаланснуться в любой момент времени
         elif {'играть'}.intersection(tokens):
             self.response['response']['text'] = ''  # ТРИ НЕЗАВЕЗЕННЫЕ ТЕМКИ
             Dialog.storage[user_id]['step'] = 2
