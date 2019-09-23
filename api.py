@@ -1,19 +1,13 @@
 from __future__ import unicode_literals
 
+from db_pattern import QuestionsModel
+
 from flask import Flask, request
 import sqlite3
 import json
 import logging
 
 app = Flask(__name__)
-
-
-class QuestionsModel:
-    def __init__(self):
-        self.conn = sqlite3.connect('data.db')
-
-    def close_connection(self):
-        self.conn.close()
 
 
 class Dialog:
