@@ -12,9 +12,6 @@ class QuestionsModel:
         self.costs = self.settings['costs']
         self.quests_nums = self.settings['quests_nums']
 
-        self.set_costs(self.costs)
-        self.set_quests_nums(self.quests_nums)
-
     def close_connection(self):
         self.conn.close()
 
@@ -34,10 +31,11 @@ class QuestionsModel:
 
     def set_quests_nums(self, new_quests_nums):  # WiP
         QuestionsModel.check_params(new_quests_nums, self.costs)
-
         costs_len = len(self.costs)
 
         for theme in new_quests_nums:
+            if theme not in self.quests_nums:
+                self.quests_nums[theme] = 0
 
             for i in range(new_quests_nums[theme] - self.quests_nums[theme]):  # Increase
                 params = (theme, '', '', self.costs[i % costs_len])
@@ -55,8 +53,13 @@ class QuestionsModel:
             self.quests_nums[theme] = new_quests_nums[theme]
 
         self.write_prop_in_settings('quests_nums', self.quests_nums)
-
         self.conn.commit()
+
+    @staticmethod
+    def check_params(quests_nums, costs):
+        for theme in quests_nums:
+            if quests_nums[theme] % len(costs) != 0:
+                raise ValueError
 
     def get_unique_random_themes(self, forbidden, num):
         themes = map(lambda el: el[0], self.cursor.execute('SELECT theme FROM questions').fetchall())
@@ -67,12 +70,6 @@ class QuestionsModel:
                 filtered.append(theme)
 
         return [filtered.pop(random.randint(0, len(filtered) - 1)) for _ in range(num)]
-
-    @staticmethod
-    def check_params(quests_nums, costs):
-        for theme in quests_nums:
-            if quests_nums[theme] % len(costs) != 0:
-                raise ValueError
 
     @staticmethod
     def read_settings():
@@ -91,11 +88,9 @@ if __name__ == "__main__":
     q_model.set_quests_nums({
         'Операционные системы': 10,
         'Анатомия': 10,
-        'Настольные игры': 10
+        'Настольные игры': 10,
+        'Отечественная война': 10,
+        'Золотой век литературы': 10
     })
-
-    q_model.set_costs([100, 150])
-
-    print(q_model.get_unique_random_themes(['Анатомия'], 3))
 
     q_model.close_connection()
