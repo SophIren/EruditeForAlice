@@ -3,15 +3,13 @@ from __future__ import unicode_literals
 from db_model import QuestionsModel
 
 from flask import Flask, request
-import sqlite3
 import json
 import logging
 
 app = Flask(__name__)
 
 
-# Сменить Dialog.storage[user_id] на self.storage и self.response['response']['response'] на self.response
-# Запульнуть в БД еще 3 темки
+# self.response['response']['response'] на self.response
 
 
 class Dialog:
@@ -23,46 +21,63 @@ class Dialog:
         self.response = {
             'session': request.json['session'],
             'version': request.json['version'],
-            'response': {}
+            'response': {
+                'text': '',
+                'end_session': False
+            }
         }
-        self.response['response']['end_session'] = False
         self.storage = Dialog.storage[user_id]
 
     def tell_rules(self):
-        self.response['response']['text'] = 'Сперва вам предлагаются 3 темы на вопросы. Сменить их вы можете \
-                не более трех раз. Далее следуют 6 вопросов стоимостью 100 и 150 очков на выбранные темы. \
+        self.response['response']['text'] += 'Сперва вам предлагаются 3 темы на вопросы. Сменить их вы можете \
+                не более двух раз. Далее следуют 6 вопросов стоимостью 100 и 150 очков на выбранные темы. \
                 При правильном ответе к вашим очкам прибавляется стоимость вопроса. При неверном отнимается \
                 половина стоимости. При выборе новых тем ваши очки сохраняются.'
         # Правила могут ребаланснуться в любой момент времени
 
     def greeting(self):
-        self.response['response']['text'] = 'Привет! Хотите посмотреть правила или начнем играть?'
+        self.response['response']['text'] += 'Привет! Хотите посмотреть правила или начнем играть?'
+
+    def ask_what_did_you_say(self):
+        self.response['response']['text'] += 'Я вас не понимаю. Скажите глупому боту подоходчивее.'
 
     def suggest_themes(self):
         themes = self.db.get_unique_random_themes(self.storage['used_themes'], 3)
         self.storage['used_themes'] += themes
 
-        self.response['response']['text'] = \
-            'Выпавшие темы: {}, {}, {}. Играем или хотите сменить темы?'.format(*themes)
+        self.response['response']['text'] += \
+            'Выпавшие темы: {}, {}, {}.'.format(*themes)
+
+        if self.storage['swapped_times'] == 0:
+            self.response['response']['text'] += ' Играем или хотите сменить темы?'
+        elif self.storage['swapped_times'] == 1:
+            self.response['response']['text'] += ' Можете играть с этими темами или сменить их последний раз.'
+        elif self.storage['swapped_times'] == 2:
+            self.storage['step'] = 3
+            self.give_question()
 
     def give_question(self):
-        self.response['response']['text'] = 'Some quest here ^_^'
+        self.response['response']['text'] += 'Some quest here ^_^'
 
     def handle_first_step(self, tokens):
         if {'играть'}.intersection(tokens):
-            self.suggest_themes()
             self.storage['step'] = 2
+            self.suggest_themes()
         else:
-            self.response['response']['text'] = 'Я вас не понимаю. Скажите глупому боту подоходчивее.'
+            self.ask_what_did_you_say()
 
     def handle_second_step(self, tokens):
         if {'сменить'}.intersection(tokens):
-            if self.storage['swapped_times'] == 3:
-                self.storage['step'] = 3
-                self.give_question()
-            else:
-                self.suggest_themes()
-                self.storage['swapped_times'] += 1
+            self.storage['swapped_times'] += 1
+            self.suggest_themes()
+        elif {'играть'}.intersection(tokens):
+            self.storage['step'] = 3
+            self.give_question()
+        else:
+            self.ask_what_did_you_say()
+
+    def handle_third_step(self, tokens):
+        pass
 
 
 @app.route('/', methods=['POST'])
@@ -90,6 +105,9 @@ def main():
 
         elif Dialog.storage[user_id]['step'] == 2:
             dialog.handle_second_step(tokens)
+
+        elif Dialog.storage[user_id]['step'] == 3:
+            dialog.handle_third_step(tokens)
 
         # HERE WILL BE OTHER STEPS
 
