@@ -9,9 +9,6 @@ import logging
 app = Flask(__name__)
 
 
-# self.response['response']['response'] на self.response
-
-
 class Dialog:
     storage = {}
 
@@ -43,10 +40,10 @@ class Dialog:
 
     def suggest_themes(self):
         themes = self.db.get_unique_random_themes(self.storage['used_themes'], 3)
+        self.storage['themes'] = themes
         self.storage['used_themes'] += themes
 
-        self.response['response']['text'] += \
-            'Выпавшие темы: {}, {}, {}.'.format(*themes)
+        self.response['response']['text'] += 'Выпавшие темы: {}, {}, {}.'.format(*themes)
 
         if self.storage['swapped_times'] == 0:
             self.response['response']['text'] += ' Играем или хотите сменить темы?'
@@ -54,10 +51,14 @@ class Dialog:
             self.response['response']['text'] += ' Можете играть с этими темами или сменить их последний раз.'
         elif self.storage['swapped_times'] == 2:
             self.storage['step'] = 3
+            self.storage['quests'] = self.db.get_random_quests(self.storage['themes'])
+            self.response['response']['text'] = 'Вы не можете более сменить темы. Начиаем!\n'
             self.give_question()
 
     def give_question(self):
-        self.response['response']['text'] += 'Some quest here ^_^'
+        self.response['response']['text'] += 'Тема: {}. Вопрос за {}. {}'.format(
+            *self.storage['quests'][self.storage['quest_num']]
+        )
 
     def handle_first_step(self, tokens):
         if {'играть'}.intersection(tokens):
@@ -72,6 +73,7 @@ class Dialog:
             self.suggest_themes()
         elif {'играть'}.intersection(tokens):
             self.storage['step'] = 3
+            self.storage['quests'] = self.db.get_random_quests(self.storage['themes'])
             self.give_question()
         else:
             self.ask_what_did_you_say()
@@ -88,8 +90,11 @@ def main():
     if request.json['session']['new']:
         Dialog.storage[user_id] = {
             'step': 1,
+            'themes': [],
             'used_themes': [],
-            'swapped_times': 0
+            'swapped_times': 0,
+            'quests': [],
+            'quest_num': 0
         }
         dialog = Dialog(user_id)
         dialog.greeting()

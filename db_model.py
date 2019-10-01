@@ -75,13 +75,15 @@ class QuestionsModel:
         return [filtered.pop(random.randint(0, len(filtered) - 1)) for _ in range(num)]
 
     def get_random_quests(self, themes):
-        req = {}
-        num = len(self.costs)
+        req = []
 
         for theme in themes:
-            quests = self.cursor.execute(
-                'SELECT cost, content, answer FROM questions WHERE theme=? AND content != \'\'', (theme,)).fetchall()
-            req[theme] = [quests.pop(random.randint(0, len(quests) - 1)) for _ in range(num)]
+            for cost in self.costs:
+                quests = self.cursor.execute(
+                    'SELECT theme, cost, content, answer FROM questions WHERE theme=? AND cost=? AND content != \'\'',
+                    (theme, cost)
+                ).fetchall()
+                req.append(quests[random.randint(0, len(quests) - 1)])
 
         return req
 
