@@ -56,9 +56,11 @@ class Dialog:
             self.give_question()
 
     def give_question(self):
+        self.storage['current_quest'] = self.storage['quests'][self.storage['quest_num']]
         self.response['response']['text'] += 'Тема: {}. Вопрос за {}. {}'.format(
-            *self.storage['quests'][self.storage['quest_num']]
+            *self.storage['current_quest'].values()
         )
+        self.storage['quest_num'] += 1
 
     def handle_first_step(self, tokens):
         if {'играть'}.intersection(tokens):
@@ -94,7 +96,8 @@ def main():
             'used_themes': [],
             'swapped_times': 0,
             'quests': [],
-            'quest_num': 0
+            'quest_num': 0,
+            'current_quest': None
         }
         dialog = Dialog(user_id)
         dialog.greeting()
