@@ -47,8 +47,10 @@ class Dialog:
 
         if self.storage['swapped_times'] == 0:
             self.response['response']['text'] += ' Играем или хотите сменить темы?'
+
         elif self.storage['swapped_times'] == 1:
             self.response['response']['text'] += ' Можете играть с этими темами или сменить их последний раз.'
+
         elif self.storage['swapped_times'] == 2:
             self.storage['step'] = 3
             self.storage['quests'] = self.db.get_random_quests(self.storage['themes'])
@@ -73,15 +75,30 @@ class Dialog:
         if {'сменить'}.intersection(tokens):
             self.storage['swapped_times'] += 1
             self.suggest_themes()
+
         elif {'играть'}.intersection(tokens):
             self.storage['step'] = 3
             self.storage['quests'] = self.db.get_random_quests(self.storage['themes'])
             self.give_question()
+
         else:
             self.ask_what_did_you_say()
 
     def handle_third_step(self, tokens):
-        pass
+        answers = self.storage['current_quest']['answer'].split('|')
+
+        if set(answers).intersection(tokens):  # Correct
+            self.storage['score'] += self.storage['current_quest']['cost']
+            self.response['response']['text'] += 'Правильно! У вас {} очков\n'.format(self.storage['score'])
+
+        else:  # Incorrect
+            self.storage['score'] -= self.storage['current_quest']['cost'] // 2
+            self.storage['score'] = max(self.storage['score'], 0)
+            self.response['response']['text'] += 'Неверно. Правильный ответ {}. У вас {} очков\n'.format(
+                answers[0], self.storage['score']
+            )
+
+        self.give_question()
 
 
 @app.route('/', methods=['POST'])
@@ -92,6 +109,7 @@ def main():
     if request.json['session']['new']:
         Dialog.storage[user_id] = {
             'step': 1,
+            'score': 0,
             'themes': [],
             'used_themes': [],
             'swapped_times': 0,
