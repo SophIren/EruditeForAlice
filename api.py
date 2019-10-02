@@ -38,6 +38,10 @@ class Dialog:
     def ask_what_did_you_say(self):
         self.response['response']['text'] += 'Я вас не понимаю. Скажите глупому боту подоходчивее.'
 
+    def finish_game(self):
+        self.response['response']['text'] += 'Пока!'
+        self.response['response']['end_session'] = True
+
     def suggest_themes(self):
         themes = self.db.get_unique_random_themes(self.storage['used_themes'], 3)
         self.storage['themes'] = themes
@@ -58,11 +62,16 @@ class Dialog:
             self.give_question()
 
     def give_question(self):
-        self.storage['current_quest'] = self.storage['quests'][self.storage['quest_num']]
-        self.response['response']['text'] += 'Тема: {}. Вопрос за {}. {}'.format(
-            *self.storage['current_quest'].values()
-        )
-        self.storage['quest_num'] += 1
+        try:
+            self.storage['current_quest'] = self.storage['quests'][self.storage['quest_num']]
+            self.response['response']['text'] += 'Тема: {}. Вопрос за {}. {}'.format(
+                *self.storage['current_quest'].values()
+            )
+            self.storage['quest_num'] += 1
+        except IndexError:
+            self.response['response']['text'] += 'Вы набрали {} очков. Хотите продолжить играть\
+             или закончить и сохранить результат в свою самооценку?'.format(self.storage['score'])
+            self.storage['step'] = 4
 
     def handle_first_step(self, tokens):
         if {'играть'}.intersection(tokens):
@@ -89,16 +98,36 @@ class Dialog:
 
         if set(answers).intersection(tokens):  # Correct
             self.storage['score'] += self.storage['current_quest']['cost']
-            self.response['response']['text'] += 'Правильно! У вас {} очков\n'.format(self.storage['score'])
+            self.response['response']['text'] += 'Правильно! '
 
         else:  # Incorrect
             self.storage['score'] -= self.storage['current_quest']['cost'] // 2
             self.storage['score'] = max(self.storage['score'], 0)
-            self.response['response']['text'] += 'Неверно. Правильный ответ {}. У вас {} очков\n'.format(
-                answers[0], self.storage['score']
-            )
+            self.response['response']['text'] += 'Неверно. Правильный ответ {}. '.format(answers[0])
 
+        self.response['response']['text'] += 'У вас {} очков.\n'.format(self.storage['score'])
         self.give_question()
+
+    def handle_fourth_step(self, tokens):
+        if {'играть'}.intersection(tokens):
+            self.storage['step'] = 2
+            self.suggest_themes()
+        else:
+            self.ask_what_did_you_say()
+
+    @staticmethod
+    def reset_storage(user_id, score):
+        Dialog.storage[user_id] = {
+            'step': 1,
+            'score': score,
+            'themes': [],
+            'used_themes': [],
+            'swapped_times': 0,
+            'quests': [],
+            'quest_num': 0,
+            'current_quest': None
+        }
+        return Dialog(user_id)
 
 
 @app.route('/', methods=['POST'])
@@ -107,17 +136,7 @@ def main():
     tokens = request.json['request']['nlu']['tokens']
 
     if request.json['session']['new']:
-        Dialog.storage[user_id] = {
-            'step': 1,
-            'score': 0,
-            'themes': [],
-            'used_themes': [],
-            'swapped_times': 0,
-            'quests': [],
-            'quest_num': 0,
-            'current_quest': None
-        }
-        dialog = Dialog(user_id)
+        dialog = Dialog.reset_storage(user_id, 0)
         dialog.greeting()
 
     else:
@@ -125,17 +144,17 @@ def main():
 
         if {'правила'}.intersection(tokens):
             dialog.tell_rules()
-
+        elif {'закончить'}.intersection(tokens):
+            dialog.finish_game()
         elif Dialog.storage[user_id]['step'] == 1:
             dialog.handle_first_step(tokens)
-
         elif Dialog.storage[user_id]['step'] == 2:
             dialog.handle_second_step(tokens)
-
         elif Dialog.storage[user_id]['step'] == 3:
             dialog.handle_third_step(tokens)
-
-        # HERE WILL BE OTHER STEPS
+        elif Dialog.storage[user_id]['step'] == 4:
+            dialog = Dialog.reset_storage(user_id, dialog.storage['score'])
+            dialog.handle_fourth_step(tokens)
 
     dialog.db.close_connection()
     return json.dumps(dialog.response)

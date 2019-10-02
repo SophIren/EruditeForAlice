@@ -16,6 +16,8 @@ class QuestionsModel:
         self.conn.close()
 
     def set_costs(self, new_costs):
+        if not all([cost % 2 == 0 for cost in new_costs]):
+            raise ValueError
         QuestionsModel.check_params(self.quests_nums, new_costs)
 
         new_costs_len = len(new_costs)
@@ -46,12 +48,14 @@ class QuestionsModel:
                 ids = self.cursor.execute('SELECT id FROM questions WHERE theme=?', (theme,)).fetchall()[-dif:]
                 ids = tuple(map(lambda x: x[0], ids))
 
+                sql_quests = ('?,' * len(ids))[:-1]
+
                 if self.cursor.execute(
-                        'SELECT content FROM questions WHERE id IN ({})'.format(('?,' * len(ids))[:-1]), ids
+                        'SELECT content FROM questions WHERE id IN ({})'.format(sql_quests,), ids
                 ).fetchall() != [('',)] * len(ids):
                     raise ValueError
 
-                self.cursor.execute('DELETE FROM questions WHERE id IN ({})'.format(('?,' * len(ids))[:-1]), ids)
+                self.cursor.execute('DELETE FROM questions WHERE id IN ({})'.format(sql_quests,), ids)
 
             self.quests_nums[theme] = new_quests_nums[theme]
 
