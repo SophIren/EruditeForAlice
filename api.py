@@ -95,8 +95,9 @@ class Dialog:
 
     def handle_third_step(self, tokens):
         answers = self.storage['current_quest']['answer'].split('|')
+        command = ' '.join(tokens)
 
-        if set(answers).intersection(tokens):  # Correct
+        if any([answer == command for answer in answers]):  # Correct
             self.storage['score'] += self.storage['current_quest']['cost']
             self.response['response']['text'] += 'Правильно! '
 
