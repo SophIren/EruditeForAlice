@@ -62,6 +62,15 @@ class QuestionsModel:
         self.write_prop_in_settings('quests_nums', self.quests_nums)
         self.conn.commit()
 
+    def change_theme_name(self, old_name, new_name):
+        self.cursor.execute('UPDATE questions SET theme=? WHERE theme=?', (new_name, old_name))
+
+        self.quests_nums[new_name] = self.quests_nums[old_name]
+        self.quests_nums[old_name] = 0
+        self.write_prop_in_settings('quests_nums', self.quests_nums)
+
+        self.conn.commit()
+
     @staticmethod
     def check_params(quests_nums, costs):
         for theme in quests_nums:
@@ -121,6 +130,8 @@ if __name__ == "__main__":
         'Первое оружие': 10,
         'Добро пожаловать в Рим!': 10
     })
+
+    q_model.change_theme_name('Добро пожаловать в Рим!', 'Добро пожаловать в Рим')
 
     print(q_model.get_random_quests(['Операционные системы', 'Анатомия']))
 
