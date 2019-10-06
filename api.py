@@ -4,7 +4,9 @@ from db_model import QuestionsModel
 
 from flask import Flask, request
 import json
-import logging
+
+# Заменить user_id на session_id
+# !!!!!! Вероятно стоит увеличить кол-во стоимости у вопросов
 
 app = Flask(__name__)
 
@@ -58,19 +60,31 @@ class Dialog:
         elif self.storage['swapped_times'] == 2:
             self.storage['step'] = 3
             self.storage['quests'] = self.db.get_random_quests(self.storage['themes'])
-            self.response['response']['text'] = 'Вы не можете более сменить темы. Начиаем!\n'
+            self.response['response']['text'] += 'Вы не можете более сменить темы. Начиаем!\n'
             self.give_question()
 
     def give_question(self):
         try:
             self.storage['current_quest'] = self.storage['quests'][self.storage['quest_num']]
-            self.response['response']['text'] += 'Тема: {}. Вопрос за {}. {}'.format(
-                *self.storage['current_quest'].values()
-            )
+
+            if self.storage['current_quest']['image_id'] is None:
+                self.response['response']['text'] += 'Тема: {}. Вопрос за {}. {}'.format(
+                    *self.storage['current_quest'].values()
+                )
+
+            else:
+                self.response['response']['card'] = {
+                    'type': 'BigImage',
+                    'image_id': self.storage['current_quest']['image_id'],
+                    'title': self.storage['current_quest']['content'],
+                    'description': self.response['response']['text']
+                }
+
             self.storage['quest_num'] += 1
+
         except IndexError:
             self.response['response']['text'] += 'Вы набрали {} очков. Хотите продолжить играть\
-             или закончить и сохранить результат в свою самооценку?'.format(self.storage['score'])
+             или закончить и записать результат в свою самооценку?'.format(self.storage['score'])
             self.storage['step'] = 4
 
     def handle_first_step(self, tokens):
@@ -97,7 +111,7 @@ class Dialog:
         answers = self.storage['current_quest']['answer'].split('|')
         command = ' '.join(tokens)
 
-        if any([answer == command for answer in answers]):  # Correct
+        if any([answer.lower() == command for answer in answers]):  # Correct
             self.storage['score'] += self.storage['current_quest']['cost']
             self.response['response']['text'] += 'Правильно! '
 

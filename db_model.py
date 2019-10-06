@@ -51,11 +51,11 @@ class QuestionsModel:
                 sql_quests = ('?,' * len(ids))[:-1]
 
                 if self.cursor.execute(
-                        'SELECT content FROM questions WHERE id IN ({})'.format(sql_quests,), ids
+                        'SELECT content FROM questions WHERE id IN ({})'.format(sql_quests, ), ids
                 ).fetchall() != [('',)] * len(ids):
                     raise ValueError
 
-                self.cursor.execute('DELETE FROM questions WHERE id IN ({})'.format(sql_quests,), ids)
+                self.cursor.execute('DELETE FROM questions WHERE id IN ({})'.format(sql_quests, ), ids)
 
             self.quests_nums[theme] = new_quests_nums[theme]
 
@@ -93,7 +93,8 @@ class QuestionsModel:
         for theme in themes:
             for cost in self.costs:
                 quests = self.cursor.execute(
-                    'SELECT theme, cost, content, answer FROM questions WHERE theme=? AND cost=? AND content != \'\'',
+                    'SELECT theme, cost, content, image_id, answer FROM questions\
+                     WHERE theme=? AND cost=? AND content != \'\'',
                     (theme, cost)
                 ).fetchall()
                 rand_quest = quests[random.randint(0, len(quests) - 1)]
@@ -101,7 +102,8 @@ class QuestionsModel:
                     'theme': rand_quest[0],
                     'cost': rand_quest[1],
                     'content': rand_quest[2],
-                    'answer': rand_quest[3]
+                    'image_id': rand_quest[3],
+                    'answer': rand_quest[4]
                 })
 
         return res
@@ -128,7 +130,8 @@ if __name__ == "__main__":
         'Пословицы': 10,
         'Поговорки': 10,
         'Первое оружие': 10,
-        'Добро пожаловать в Рим!': 10
+        'Добро пожаловать в Рим': 10,
+        'Картины': 10
     })
 
     q_model.change_theme_name('Добро пожаловать в Рим!', 'Добро пожаловать в Рим')
