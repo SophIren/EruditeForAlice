@@ -6,7 +6,7 @@ from flask import Flask, request
 import json
 
 # Заменить user_id на session_id
-# !!!!!! Вероятно стоит увеличить кол-во стоимости у вопросов
+# !!!!!! Вероятно стоит увеличить кол-во стоимостей у вопросов
 
 app = Flask(__name__)
 
@@ -59,7 +59,7 @@ class Dialog:
 
         elif self.storage['swapped_times'] == 2:
             self.storage['step'] = 3
-            self.storage['quests'] = self.db.get_random_quests(self.storage['themes'])
+            self.storage['quests'] = self.db.get_random_quests(self.storage['themes'], 2)
             self.response['response']['text'] += 'Вы не можете более сменить темы. Начиаем!\n'
             self.give_question()
 
@@ -100,8 +100,9 @@ class Dialog:
             self.suggest_themes()
 
         elif {'играть'}.intersection(tokens):
+            self.response['response']['text'] += 'Начнем! '
             self.storage['step'] = 3
-            self.storage['quests'] = self.db.get_random_quests(self.storage['themes'])
+            self.storage['quests'] = self.db.get_random_quests(self.storage['themes'], 2)
             self.give_question()
 
         else:

@@ -23,8 +23,14 @@ class QuestionsModel:
         new_costs_len = len(new_costs)
 
         for i in range(len(new_costs)):
-            self.cursor.execute('UPDATE questions SET cost=? WHERE id%?-?=0',
-                                (new_costs[i], new_costs_len, (i + 1) % new_costs_len))
+            k = (i + 1) % new_costs_len
+
+            for theme in self.quests_nums:
+                ids = self.cursor.execute('SELECT id FROM questions WHERE theme=?', (theme,)).fetchall()
+
+                for j in range(1, len(ids) + 1):
+                    if j % new_costs_len - k == 0:
+                        self.cursor.execute('UPDATE questions SET cost=? WHERE id=?', (new_costs[i], ids[j - 1][0]))
 
         self.costs = new_costs
         self.write_prop_in_settings('costs', new_costs)
@@ -87,11 +93,15 @@ class QuestionsModel:
 
         return [filtered.pop(random.randint(0, len(filtered) - 1)) for _ in range(num)]
 
-    def get_random_quests(self, themes):
+    def get_random_quests(self, themes, nums_for_theme):
         res = []
 
         for theme in themes:
-            for cost in self.costs:
+            costs = self.costs.copy()
+            for _ in range(len(self.costs) - nums_for_theme):
+                del costs[random.randint(0, len(costs) - 1)]
+
+            for cost in costs:
                 quests = self.cursor.execute(
                     'SELECT theme, cost, content, image_id, answer FROM questions\
                      WHERE theme=? AND cost=? AND content != \'\'',
@@ -113,7 +123,7 @@ class QuestionsModel:
         with open('data_settings.json', encoding='utf-8') as settings:
             return json.load(settings)
 
-    def write_prop_in_settings(self, prop, value):  # Записываются темы с 0 вопросами!!!
+    def write_prop_in_settings(self, prop, value):  # Themes with 0 questions will be written
         self.settings[prop] = value
         with open('data_settings.json', mode='w', encoding='utf-8') as settings:
             return json.dump(self.settings, settings)
@@ -123,19 +133,20 @@ if __name__ == "__main__":
     q_model = QuestionsModel()
 
     q_model.set_quests_nums({
-        'Операционные системы': 10,
-        'Анатомия': 10,
-        'Отечественная война': 10,
-        'Золотой век литературы': 10,
-        'Пословицы': 10,
-        'Поговорки': 10,
-        'Первое оружие': 10,
-        'Добро пожаловать в Рим': 10,
-        'Картины': 10
+        'Операционные системы': 12,
+        'Анатомия': 12,
+        'Авторы произведений': 12,
+        'Отечественная война': 12,
+        'Золотой век литературы': 12,
+        'Пословицы': 12,
+        'Поговорки': 12,
+        'Первое оружие': 12,
+        'Добро пожаловать в Рим': 12,
+        'Картины': 12
     })
 
-    q_model.change_theme_name('Добро пожаловать в Рим!', 'Добро пожаловать в Рим')
+    q_model.set_costs([100, 150, 200, 250])
 
-    print(q_model.get_random_quests(['Операционные системы', 'Анатомия']))
+    print(q_model.get_random_quests(['Первое оружие'], 2))
 
     q_model.close_connection()
