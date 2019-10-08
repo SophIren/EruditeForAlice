@@ -132,6 +132,9 @@ class QuestionsModel:
 if __name__ == "__main__":
     q_model = QuestionsModel()
 
+    for _ in range(10000):
+        print(q_model.get_random_quests(['Старинное оружие'], 2))
+
     q_model.set_quests_nums({
         'Операционные системы': 12,
         'Анатомия': 12,
@@ -140,13 +143,9 @@ if __name__ == "__main__":
         'Золотой век литературы': 12,
         'Пословицы': 12,
         'Поговорки': 12,
-        'Первое оружие': 12,
+        'Старинное оружие': 12,
         'Добро пожаловать в Рим': 12,
         'Картины': 12
     })
-
-    q_model.set_costs([100, 150, 200, 250])
-
-    print(q_model.get_random_quests(['Первое оружие'], 2))
 
     q_model.close_connection()

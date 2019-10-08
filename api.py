@@ -79,6 +79,9 @@ class Dialog:
                     'title': self.storage['current_quest']['content'],
                     'description': self.response['response']['text']
                 }
+                self.response['response']['text'] += 'Тема: {}. Вопрос за {}. {}'.format(
+                    *self.storage['current_quest'].values()
+                )
 
             self.storage['quest_num'] += 1
 
