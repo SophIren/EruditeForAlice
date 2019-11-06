@@ -5,9 +5,6 @@ from db_model import QuestionsModel
 from flask import Flask, request
 import json
 
-# Заменить user_id на session_id
-# !!!!!! Вероятно стоит увеличить кол-во стоимостей у вопросов
-
 app = Flask(__name__)
 
 
@@ -32,7 +29,6 @@ class Dialog:
                 не более двух раз. Далее следуют 6 вопросов стоимостью 100 и 150 очков на выбранные темы. \
                 При правильном ответе к вашим очкам прибавляется стоимость вопроса. При неверном отнимается \
                 половина стоимости. При выборе новых тем ваши очки сохраняются.'
-        # Правила могут ребаланснуться в любой момент времени
 
     def greeting(self):
         self.response['response']['text'] += 'Привет! Хотите посмотреть правила или начнем играть?'
@@ -67,21 +63,20 @@ class Dialog:
         try:
             self.storage['current_quest'] = self.storage['quests'][self.storage['quest_num']]
 
-            if self.storage['current_quest']['image_id'] is None:
-                self.response['response']['text'] += 'Тема: {}. Вопрос за {}. {}'.format(
-                    *self.storage['current_quest'].values()
-                )
+            if self.storage['current_quest']['sound_id'] is not None:
+                self.response['response']['tts'] = self.storage['current_quest']['sound_id']
 
-            else:
+            if self.storage['current_quest']['image_id'] is not None:
                 self.response['response']['card'] = {
                     'type': 'BigImage',
                     'image_id': self.storage['current_quest']['image_id'],
                     'title': self.storage['current_quest']['content'],
                     'description': self.response['response']['text']
                 }
-                self.response['response']['text'] += 'Тема: {}. Вопрос за {}. {}'.format(
-                    *self.storage['current_quest'].values()
-                )
+
+            self.response['response']['text'] += 'Тема: {}. Вопрос за {}. {}'.format(
+                *self.storage['current_quest'].values()
+            )
 
             self.storage['quest_num'] += 1
 

@@ -103,7 +103,7 @@ class QuestionsModel:
 
             for cost in costs:
                 quests = self.cursor.execute(
-                    'SELECT theme, cost, content, image_id, answer FROM questions\
+                    'SELECT theme, cost, content, image_id, answer, sound_id FROM questions\
                      WHERE theme=? AND cost=? AND content != \'\'',
                     (theme, cost)
                 ).fetchall()
@@ -113,7 +113,8 @@ class QuestionsModel:
                     'cost': rand_quest[1],
                     'content': rand_quest[2],
                     'image_id': rand_quest[3],
-                    'answer': rand_quest[4]
+                    'answer': rand_quest[4],
+                    'sound_id': rand_quest[5]
                 })
 
         return res
