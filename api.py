@@ -41,22 +41,23 @@ class Dialog:
         self.response['response']['end_session'] = True
 
     def suggest_themes(self):
-        themes = self.db.get_unique_random_themes(self.storage['used_themes'], 3)
-        self.storage['themes'] = themes
+        themes = self.db.get_unique_random_themes(self.storage['used_themes'] + self.storage['played_themes'], 3)
+        self.storage['chosen_themes'] = themes
         self.storage['used_themes'] += themes
 
         self.response['response']['text'] += 'Выпавшие темы: {}, {}, {}.'.format(*themes)
 
-        if self.storage['swapped_times'] == 0:
+        if self.storage['times_swapped'] == 0:
             self.response['response']['text'] += ' Играем или хотите сменить темы?'
 
-        elif self.storage['swapped_times'] == 1:
+        elif self.storage['times_swapped'] == 1:
             self.response['response']['text'] += ' Можете играть с этими темами или сменить их последний раз.'
 
-        elif self.storage['swapped_times'] == 2:
+        elif self.storage['times_swapped'] == 2:
+            self.storage['played_themes'] += self.storage['chosen_themes']
             self.storage['step'] = 3
-            self.storage['quests'] = self.db.get_random_quests(self.storage['themes'], 2)
-            self.response['response']['text'] += 'Вы не можете более сменить темы. Начиаем!\n'
+            self.storage['quests'] = self.db.get_random_quests(self.storage['chosen_themes'], 2)
+            self.response['response']['text'] += ' Вы не можете более сменить темы. Начиаем!\n'
             self.give_question()
 
     def give_question(self):
@@ -67,14 +68,15 @@ class Dialog:
                 self.response['response']['tts'] = self.storage['current_quest']['sound_id']
 
             if self.storage['current_quest']['image_id'] is not None:
+                content, title = self.storage['current_quest']['content'].split('~')
                 self.response['response']['card'] = {
                     'type': 'BigImage',
                     'image_id': self.storage['current_quest']['image_id'],
-                    'title': self.storage['current_quest']['content'],
-                    'description': self.response['response']['text']
+                    'title': title,
+                    'description': self.response['response']['text'] + content
                 }
 
-            self.response['response']['text'] += 'Тема: {}. Вопрос за {}. {}'.format(
+            self.response['response']['text'] += 'Тема: {}. Вопрос за {}.\n {}'.format(
                 *self.storage['current_quest'].values()
             )
 
@@ -94,13 +96,15 @@ class Dialog:
 
     def handle_second_step(self, tokens):
         if {'сменить'}.intersection(tokens):
-            self.storage['swapped_times'] += 1
+            self.storage['times_swapped'] += 1
             self.suggest_themes()
 
         elif {'играть'}.intersection(tokens):
+            print(self.storage['chosen_themes'])
+            self.storage['played_themes'] += self.storage['chosen_themes']
             self.response['response']['text'] += 'Начнем! '
             self.storage['step'] = 3
-            self.storage['quests'] = self.db.get_random_quests(self.storage['themes'], 2)
+            self.storage['quests'] = self.db.get_random_quests(self.storage['chosen_themes'], 2)
             self.give_question()
 
         else:
@@ -130,13 +134,14 @@ class Dialog:
             self.ask_what_did_you_say()
 
     @staticmethod
-    def reset_storage(user_id, score):
+    def reset_storage(user_id, score, played_themes):
         Dialog.storage[user_id] = {
             'step': 1,
             'score': score,
-            'themes': [],
+            'chosen_themes': [],
             'used_themes': [],
-            'swapped_times': 0,
+            'played_themes': played_themes,
+            'times_swapped': 0,
             'quests': [],
             'quest_num': 0,
             'current_quest': None
@@ -150,7 +155,7 @@ def main():
     tokens = request.json['request']['nlu']['tokens']
 
     if request.json['session']['new']:
-        dialog = Dialog.reset_storage(user_id, 0)
+        dialog = Dialog.reset_storage(user_id, 0, [])
         dialog.greeting()
 
     else:
@@ -167,7 +172,7 @@ def main():
         elif Dialog.storage[user_id]['step'] == 3:
             dialog.handle_third_step(tokens)
         elif Dialog.storage[user_id]['step'] == 4:
-            dialog = Dialog.reset_storage(user_id, dialog.storage['score'])
+            dialog = Dialog.reset_storage(user_id, dialog.storage['score'], dialog.storage['played_themes'])
             dialog.handle_fourth_step(tokens)
 
     dialog.db.close_connection()
