@@ -42,6 +42,10 @@ class Dialog:
 
     def suggest_themes(self):
         themes = self.db.get_unique_random_themes(self.storage['used_themes'] + self.storage['played_themes'], 3)
+        if not themes:  # If no themes which aren't played is available
+            self.storage['played_themes'] = []
+            themes = self.db.get_unique_random_themes(self.storage['used_themes'], 3)
+
         self.storage['chosen_themes'] = themes
         self.storage['used_themes'] += themes
 
@@ -69,6 +73,7 @@ class Dialog:
 
             if self.storage['current_quest']['image_id'] is not None:
                 content, title = self.storage['current_quest']['content'].split('~')
+                self.storage['current_quest']['content'] = self.storage['current_quest']['content'].replace('~', ' ')
                 self.response['response']['card'] = {
                     'type': 'BigImage',
                     'image_id': self.storage['current_quest']['image_id'],

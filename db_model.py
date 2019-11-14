@@ -91,7 +91,10 @@ class QuestionsModel:
             if theme not in filtered and theme not in forbidden:
                 filtered.append(theme)
 
-        return [filtered.pop(random.randint(0, len(filtered) - 1)) for _ in range(num)]
+        try:
+            return [filtered.pop(random.randint(0, len(filtered) - 1)) for _ in range(num)]
+        except ValueError:
+            return []
 
     def get_random_quests(self, themes, nums_for_theme):
         res = []
@@ -133,8 +136,6 @@ class QuestionsModel:
 if __name__ == "__main__":
     q_model = QuestionsModel()
 
-    q_model.change_theme_name('Классическая музыка', 'Музыка')
-
     q_model.set_quests_nums({
         'Анатомия': 12,
         'Отечественная война': 16,
@@ -145,11 +146,11 @@ if __name__ == "__main__":
         'Картины': 12,
         'Военная техника': 12,
         'Угадай актера\актрису': 12,
-        'Животные': 0,
+        'Животные': 12,
         'Фильмы': 12,
-        'Информационные технологии': 0,
-        'Музыка': 0,
-        'Сериалы': 0
+        'Информационные технологии': 12,
+        'Музыка': 12,
+        'Сериалы': 12,
     })
 
     q_model.close_connection()
