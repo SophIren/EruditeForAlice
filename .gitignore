@@ -1,7 +1,8 @@
 /.idea/*
-/images/*
 /__pycache__/*
 /node_modules/*
 /package-lock.json
 /format_images.js
-/sounds/*
+/media/*
+/Plan.docx
+/test.py
