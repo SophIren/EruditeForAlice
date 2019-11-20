@@ -196,9 +196,9 @@ def main():
     else:
         dialog = Dialog(user_id)
 
-        if Dialog.check_phrase_fit(command, Dialog.key_phrases['rules']):
+        if Dialog.check_phrase_fit(command, Dialog.key_phrases['rules']) and Dialog.storage[user_id]['stage'] != 3:
             dialog.tell_rules()
-        elif Dialog.check_phrase_fit(command, Dialog.key_phrases['farewell']) and Dialog.storage[user_id]['stage'] != 3:
+        elif Dialog.check_phrase_fit(command, Dialog.key_phrases['farewell']):
             dialog.finish_game()
         elif Dialog.storage[user_id]['stage'] == 0:
             dialog.handle_zero_stage(command)
