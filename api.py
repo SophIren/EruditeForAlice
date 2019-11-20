@@ -1,6 +1,6 @@
 from __future__ import unicode_literals
 
-from DB.db_model import QuestionsModel
+from db_model import QuestionsModel
 
 from flask import Flask, request
 import json
