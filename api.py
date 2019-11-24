@@ -41,7 +41,7 @@ class Dialog:
         self.response['response']['text'] += 'Я вас не понимаю. Скажите глупому боту подоходчивее.'
 
     def finish_game(self):
-        self.response['response']['text'] += 'Пока!'
+        self.response['response']['text'] += 'Всего хорошего!'
         self.response['response']['end_session'] = True
 
     def suggest_themes(self):
@@ -161,7 +161,7 @@ class Dialog:
         elif self.storage['stage'] == 3:
             self.response['response']['buttons'].append(Dialog.buttons['do_not_know_but'])
         elif self.storage['stage'] == 4:
-            self.response['response']['buttons'].append(Dialog.buttons['continue_but'])
+            self.response['response']['buttons'] += [Dialog.buttons['continue_but'], Dialog.buttons['bye_but']]
 
     @staticmethod
     def reset_storage(user_id, score, played_themes):
@@ -246,11 +246,15 @@ Dialog.buttons = {
     'no_but': {
         'title': 'Нет',
         'hide': True
+    },
+    'bye_but': {
+        'title': 'Пока',
+        'hide': True
     }
 }
 Dialog.key_phrases = {
     'rules': {'правила'},
-    'farewell': {'закончить', 'пока', 'до свидания'},
+    'farewell': {'закончить', 'пока', 'до свидания', 'записать'},
     'play': {'играть', 'играем', 'продолжим', 'продолжить', 'продолжаем', 'начнем'},
     'change': {'сменить', 'другие', 'смени'}
 }
