@@ -34,7 +34,8 @@ class Dialog:
             self.storage['stage'] = 0
 
     def greeting(self):
-        self.response['response']['text'] += 'Привет! Хотите посмотреть правила или начнем играть?'
+        self.response['response']['text'] += 'Добро пожаловать в "Я - Эрудит"! ' \
+                                             'Хотите посмотреть правила или начнем играть?'
         self.storage['last_phrase'] = 'Начнем играть?'
 
     def ask_what_did_you_say(self):
