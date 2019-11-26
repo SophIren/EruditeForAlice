@@ -26,15 +26,33 @@ class Dialog:
         self.storage = Dialog.storage[user_id]
 
     def tell_rules(self):
-        self.response['response']['text'] += 'Сперва вам предлагаются 3 темы на вопросы. Сменить их вы можете \
-                не более двух раз. Далее следуют 6 вопросов разных стоимостей на выбранные темы. \
-                При выборе новых трех тем ваши очки сохраняются.\n{}'.format(self.storage['last_phrase'])
+        self.response['response']['text'] += 'Правила игры: \
+        сперва вам предлагаются 3 темы на вопросы. Сменить их вы можете \
+        не более двух раз. Далее следуют 6 вопросов разных стоимостей на выбранные темы. \
+        При выборе новых трех тем ваши очки сохраняются.'
+        self.use_last_phrase()
 
+    def use_last_phrase(self):
+        self.response['response']['text'] += '\n{}'.format(self.storage['last_phrase'])
         if self.storage['stage'] == 1 or self.storage['stage'] == 4:
             self.storage['stage'] = 0
 
+    def help(self):
+        if self.storage['stage'] == 1 or self.storage['stage'] == 0 or self.storage['stage'] == 4:
+            self.tell_rules()
+        elif self.storage['stage'] == 2:
+            self.response['response']['text'] += 'На данном этапе вы можете выбрать выпавшие темы или сменить их. ' \
+                                                 'Для полной информации посмотрите правила.'
+            self.use_last_phrase()
+        elif self.storage['stage'] == 3:
+            self.response['response']['text'] += 'Ничего сложного. Сейчас вам просто нужно ответить на вопрос.'
+
+    def tell_my_abilities(self):
+        self.response['response']['text'] += 'Это очень просто. У меня две функции. РАЗвлечь и РАЗвить вас.'
+        self.use_last_phrase()
+
     def greeting(self):
-        self.response['response']['text'] += 'Добро пожаловать в "Я - Эрудит"! ' \
+        self.response['response']['text'] += 'Добро пожаловать в "Кто хочет стать эрудитом"! ' \
                                              'Хотите посмотреть правила или начнем играть?'
         self.storage['last_phrase'] = 'Начнем играть?'
 
@@ -97,7 +115,7 @@ class Dialog:
         except IndexError:
             self.response['response']['text'] += 'Вы набрали {} очков. Хотите продолжить играть\
              или закончить и записать результат в свою самооценку?'.format(self.storage['score'])
-            self.response['response']['last_phrase'] = 'Продолжим играть?'
+            self.storage['last_phrase'] = 'Продолжим играть?'
             self.storage['stage'] = 4
 
     def handle_zero_stage(self, command):
@@ -126,6 +144,7 @@ class Dialog:
         elif self.check_phrase_fit(command, Dialog.key_phrases['play']):
             self.storage['played_themes'] += self.storage['chosen_themes']
             self.response['response']['text'] += 'Начнем! '
+            self.storage['last_phrase'] = ''
             self.storage['stage'] = 3
             self.storage['quests'] = self.db.get_random_quests(self.storage['chosen_themes'], 2)
             self.give_question()
@@ -199,9 +218,14 @@ def main():
 
         if Dialog.check_phrase_fit(command, Dialog.key_phrases['rules']) and Dialog.storage[user_id]['stage'] != 3:
             dialog.tell_rules()
+        elif Dialog.check_phrase_fit(command, Dialog.key_phrases['what_can_you_do']):
+            dialog.tell_my_abilities()
+        elif Dialog.check_phrase_fit(command, Dialog.key_phrases['help']):
+            dialog.help()
         elif Dialog.check_phrase_fit(command, Dialog.key_phrases['farewell']):
             dialog.finish_game()
         elif Dialog.storage[user_id]['stage'] == 0:
+            dialog = Dialog.reset_storage(user_id, dialog.storage['score'], dialog.storage['played_themes'])
             dialog.handle_zero_stage(command)
         elif Dialog.storage[user_id]['stage'] == 1:
             dialog.handle_first_stage(command)
@@ -255,6 +279,8 @@ Dialog.buttons = {
 }
 Dialog.key_phrases = {
     'rules': {'правила'},
+    'help': {'помощь', 'помоги', 'что делать'},
+    'what_can_you_do': {'что ты умеешь'},
     'farewell': {'закончить', 'пока', 'до свидания', 'записать'},
     'play': {'играть', 'играем', 'продолжим', 'продолжить', 'продолжаем', 'начнем'},
     'change': {'сменить', 'другие', 'смени'}
