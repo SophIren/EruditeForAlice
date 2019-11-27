@@ -23,6 +23,7 @@ class Dialog:
                 'end_session': False
             }
         }
+        self.user_id = user_id
         self.storage = Dialog.storage[user_id]
 
     def tell_rules(self):
@@ -57,7 +58,8 @@ class Dialog:
         self.storage['last_phrase'] = 'Начнем играть?'
 
     def ask_what_did_you_say(self):
-        self.response['response']['text'] += 'Я вас не понимаю. Скажите глупому боту подоходчивее.'
+        self.response['response']['text'] += 'Я вас не понимаю. Скажите глупому боту подоходчивее.\n' \
+                                             '{}'.format(self.use_last_phrase())
 
     def finish_game(self):
         self.response['response']['text'] += 'Всего хорошего!'
@@ -113,13 +115,14 @@ class Dialog:
             self.storage['quest_num'] += 1
 
         except IndexError:
-            self.response['response']['text'] += 'Вы набрали {} очков. Хотите продолжить играть\
+            self.response['response']['text'] += 'Хотите продолжить играть\
              или закончить и записать результат в свою самооценку?'.format(self.storage['score'])
             self.storage['last_phrase'] = 'Продолжим играть?'
             self.storage['stage'] = 4
 
     def handle_zero_stage(self, command):
         if self.check_phrase_fit(command, Dialog.key_phrases['play']) or 'да' in command:
+            self.storage = Dialog.reset_storage(self.user_id, self.storage['score'], self.storage['played_themes'])
             self.storage['stage'] = 2
             self.suggest_themes()
         elif self.check_phrase_fit(command, Dialog.key_phrases['farewell']) or 'нет' in command:
@@ -130,9 +133,9 @@ class Dialog:
 
     def handle_first_stage(self, command):
         if self.check_phrase_fit(command, Dialog.key_phrases['play']):
+            self.storage = Dialog.reset_storage(self.user_id, self.storage['score'], self.storage['played_themes'])
             self.storage['stage'] = 2
             self.suggest_themes()
-
         else:
             self.ask_what_did_you_say()
 
@@ -172,10 +175,10 @@ class Dialog:
 
     def add_button_hints(self):
         if self.storage['stage'] == 0:
-            self.response['response']['buttons'] += [Dialog.buttons['help_but'],
+            self.response['response']['buttons'] += [Dialog.buttons['rules_but'],
                                                      Dialog.buttons['yes_but'], Dialog.buttons['no_but']]
         elif self.storage['stage'] == 1:
-            self.response['response']['buttons'] += [Dialog.buttons['help_but'], Dialog.buttons['play_but']]
+            self.response['response']['buttons'] += [Dialog.buttons['rules_but'], Dialog.buttons['play_but']]
         elif self.storage['stage'] == 2:
             self.response['response']['buttons'] += [Dialog.buttons['change_but'], Dialog.buttons['play_but']]
         elif self.storage['stage'] == 3:
@@ -197,7 +200,7 @@ class Dialog:
             'current_quest': None,
             'last_phrase': ''
         }
-        return Dialog(user_id)
+        return Dialog.storage[user_id]
 
     @staticmethod
     def check_phrase_fit(command, key_phrases):
@@ -210,7 +213,8 @@ def main():
     command = ' '.join(request.json['request']['nlu']['tokens'])
 
     if request.json['session']['new']:
-        dialog = Dialog.reset_storage(user_id, 0, [])
+        Dialog.reset_storage(user_id, 0, [])
+        dialog = Dialog(user_id)
         dialog.greeting()
 
     else:
@@ -225,7 +229,6 @@ def main():
         elif Dialog.check_phrase_fit(command, Dialog.key_phrases['farewell']):
             dialog.finish_game()
         elif Dialog.storage[user_id]['stage'] == 0:
-            dialog = Dialog.reset_storage(user_id, dialog.storage['score'], dialog.storage['played_themes'])
             dialog.handle_zero_stage(command)
         elif Dialog.storage[user_id]['stage'] == 1:
             dialog.handle_first_stage(command)
@@ -234,7 +237,6 @@ def main():
         elif Dialog.storage[user_id]['stage'] == 3:
             dialog.handle_third_stage(command)
         elif Dialog.storage[user_id]['stage'] == 4:
-            dialog = Dialog.reset_storage(user_id, dialog.storage['score'], dialog.storage['played_themes'])
             dialog.handle_first_stage(command)
 
     dialog.add_button_hints()
@@ -244,7 +246,7 @@ def main():
 
 
 Dialog.buttons = {
-    'help_but': {
+    'rules_but': {
         'title': 'Расскажи правила',
         'hide': True
     },
