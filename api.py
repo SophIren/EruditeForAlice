@@ -58,8 +58,8 @@ class Dialog:
         self.storage['last_phrase'] = 'Начнем играть?'
 
     def ask_what_did_you_say(self):
-        self.response['response']['text'] += 'Я вас не понимаю. Скажите глупому боту подоходчивее.\n' \
-                                             '{}'.format(self.use_last_phrase())
+        self.response['response']['text'] += 'Я вас не понимаю. Скажите глупому боту подоходчивее.'
+        self.use_last_phrase()
 
     def finish_game(self):
         self.response['response']['text'] += 'Всего хорошего!'
