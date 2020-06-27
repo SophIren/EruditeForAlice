@@ -157,14 +157,13 @@ class Dialog:
             self.ask_what_did_you_say()
 
     def handle_third_stage(self, command):
-        answers = self.storage['current_quest']['answer']
+        answers = self.storage['current_quest']['answer'].split('|')
 
-        if re.match('({0})*({1})({0})*'.format(TYPICAL_PHRASES, answers), command):  # Correct
+        if re.match('({0})*({1})({0})*'.format(TYPICAL_PHRASES, '|'.join(map(str.lower, answers))), command):  # Correct
             self.storage['score'] += self.storage['current_quest']['cost']
             self.response['response']['text'] += 'Правильно! '
 
         else:  # Incorrect
-            answers = answers.split('|')
             self.storage['score'] -= self.storage['current_quest']['cost'] // 2
             self.storage['score'] = max(self.storage['score'], 0)
             if command == 'не знаю':
