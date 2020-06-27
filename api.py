@@ -4,6 +4,7 @@ from db_model import QuestionsModel
 
 from flask import Flask, request
 import json
+import re
 
 app = Flask(__name__)
 
@@ -156,13 +157,14 @@ class Dialog:
             self.ask_what_did_you_say()
 
     def handle_third_stage(self, command):
-        answers = self.storage['current_quest']['answer'].split('|')
+        answers = self.storage['current_quest']['answer']
 
-        if any([answer.lower() == command for answer in answers]):  # Correct
+        if re.match('({0})*({1})({0})*'.format(TYPICAL_PHRASES, answers), command):  # Correct
             self.storage['score'] += self.storage['current_quest']['cost']
             self.response['response']['text'] += 'Правильно! '
 
         else:  # Incorrect
+            answers = answers.split('|')
             self.storage['score'] -= self.storage['current_quest']['cost'] // 2
             self.storage['score'] = max(self.storage['score'], 0)
             if command == 'не знаю':
@@ -285,8 +287,10 @@ Dialog.key_phrases = {
     'what_can_you_do': {'что ты умеешь'},
     'farewell': {'закончить', 'пока', 'до свидания', 'записать'},
     'play': {'играть', 'играем', 'продолжим', 'продолжить', 'продолжаем', 'начнем'},
-    'change': {'сменить', 'другие', 'смени'}
+    'change': {'сменить', 'смени', 'убери'}
 }
+
+TYPICAL_PHRASES = r'я |думаю |это |что |скорее всего |считаю |предпологаю | наверно| надеюсь | то'
 
 if __name__ == '__main__':
     app.run()
