@@ -5,6 +5,7 @@ from db_model import QuestionsModel
 from flask import Flask, request
 import json
 import re
+import pymorphy2
 
 app = Flask(__name__)
 
@@ -158,16 +159,24 @@ class Dialog:
 
     def handle_third_stage(self, command):
         answers = self.storage['current_quest']['answer'].split('|')
+        quest_content = list(map(lambda el: el.lower() + ' ', self.storage['current_quest']['content']
+                                 .replace('~', ' ').replace('!', ' ').replace('?', ' ').
+                                 replace('.', ' ').replace(',', ' ').split()))
+        typicals = '|'.join(Dialog.TYP_PHRASES.split('|') + quest_content)
+
+        typicals = ' |'.join(self.to_inf(typicals.split(' |')))
+        inf_answers = self.to_inf(map(str.lower, answers))
+        command = ' '.join(self.to_inf(command.split()))
 
         # Correct
-        if re.match('({0})*({1})({0})*'.format(Dialog.TYP_PHRASES, '|'.join(map(str.lower, answers))), command + ' '):
+        if re.match('({0})*({1})({0})*'.format(typicals + ' ', '|'.join(inf_answers)), command + ' '):
             self.storage['score'] += self.storage['current_quest']['cost']
             self.response['response']['text'] += 'Правильно! '
 
         else:  # Incorrect
             self.storage['score'] -= self.storage['current_quest']['cost'] // 2
             self.storage['score'] = max(self.storage['score'], 0)
-            if command == 'не знаю':
+            if 'не знать' in command:
                 self.response['response']['text'] += 'Правильный ответ {}. '.format(answers[0])
             else:
                 self.response['response']['text'] += 'Неверно. Правильный ответ {}. '.format(answers[0])
@@ -187,6 +196,17 @@ class Dialog:
             self.response['response']['buttons'].append(Dialog.buttons['do_not_know_but'])
         elif self.storage['stage'] == 4:
             self.response['response']['buttons'] += [Dialog.buttons['continue_but'], Dialog.buttons['bye_but']]
+
+    @staticmethod
+    def to_inf(phrases):
+        list2 = []
+        infs = []
+        for phrase in phrases:
+            for word in phrase.split():
+                infs.append(morph.parse(word)[0].normal_form)
+            list2.append(' '.join(infs))
+            infs.clear()
+        return list2
 
     @staticmethod
     def reset_storage(user_id, score, played_themes):
@@ -286,11 +306,13 @@ Dialog.key_phrases = {
     'help': {'помощь', 'помоги', 'что делать'},
     'what_can_you_do': {'что ты умеешь'},
     'farewell': {'закончить', 'пока', 'до свидания', 'записать'},
-    'play': {'играть', 'играем', 'продолжим', 'продолжить', 'продолжаем', 'начнем'},
+    'play': {'играть', 'играем', 'продолжим', 'продолжить', 'продолжаем', 'начнем', 'начинаем'},
     'change': {'сменить', 'смени', 'убери'}
 }
 
 Dialog.TYP_PHRASES = r'я |думаю |это |что |скорее всего |считаю |предпологаю |наверно |надеюсь |то |определенно '
+
+morph = pymorphy2.MorphAnalyzer()
 
 if __name__ == '__main__':
     app.run()
