@@ -159,7 +159,8 @@ class Dialog:
     def handle_third_stage(self, command):
         answers = self.storage['current_quest']['answer'].split('|')
 
-        if re.match('({0})*({1})({0})*'.format(TYPICAL_PHRASES, '|'.join(map(str.lower, answers))), command):  # Correct
+        # Correct
+        if re.match('({0})*({1})({0})*'.format(Dialog.TYP_PHRASES, '|'.join(map(str.lower, answers))), command + ' '):
             self.storage['score'] += self.storage['current_quest']['cost']
             self.response['response']['text'] += 'Правильно! '
 
@@ -289,7 +290,7 @@ Dialog.key_phrases = {
     'change': {'сменить', 'смени', 'убери'}
 }
 
-TYPICAL_PHRASES = r'я |думаю |это |что |скорее всего |считаю |предпологаю | наверно| надеюсь | то'
+Dialog.TYP_PHRASES = r'я |думаю |это |что |скорее всего |считаю |предпологаю |наверно |надеюсь |то |определенно '
 
 if __name__ == '__main__':
     app.run()
