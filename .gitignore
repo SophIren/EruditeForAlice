@@ -1,6 +1,7 @@
 /.idea/*
 /__pycache__/*
 /node_modules/*
+/publication/*
 /package-lock.json
 /format_images.js
 /media/*
